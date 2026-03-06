@@ -19,7 +19,7 @@ from flask import Flask, request, jsonify, send_from_directory
 # ── 路徑設定 ─────────────────────────────────────────────────────────
 BASE_DIR = Path(__file__).parent.resolve()
 DB_PATH  = BASE_DIR / "fridge_data.db"
-PORT     = 7788
+PORT     = int(os.environ.get("PORT", 7788))
 
 app = Flask(__name__, static_folder=str(BASE_DIR), static_url_path="")
 
@@ -167,7 +167,7 @@ def try_pywebview():
         )
         # 先啟動 Flask（非阻塞）
         flask_thread = threading.Thread(
-            target=lambda: app.run(host="127.0.0.1", port=PORT, debug=False, use_reloader=False),
+            target=lambda: app.run(host="0.0.0.0", port=PORT, debug=False, use_reloader=False),
             daemon=True
         )
         flask_thread.start()
@@ -177,21 +177,34 @@ def try_pywebview():
     except ImportError:
         return False
 
+def get_local_ip():
+    """取得本機區域網路 IP"""
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except:
+        return "127.0.0.1"
+
 def run_with_browser():
     """Fallback：用瀏覽器開啟"""
+    local_ip = get_local_ip()
     print("=" * 50)
     print("  🧊 智慧冰箱 App 已啟動！")
-    print(f"  瀏覽器視窗即將自動開啟...")
-    print(f"  或手動前往：http://localhost:{PORT}")
+    print()
+    print(f"  💻 本機：    http://localhost:{PORT}")
+    print(f"  📱 手機/平板：http://{local_ip}:{PORT}")
+    print()
+    print("  手機與電腦需在同一個 WiFi 下")
     print("  按 Ctrl+C 關閉 App")
     print("=" * 50)
     threading.Thread(target=open_browser, daemon=True).start()
-    app.run(host="127.0.0.1", port=PORT, debug=False, use_reloader=False)
+    app.run(host="0.0.0.0", port=PORT, debug=False, use_reloader=False)
 
 if __name__ == "__main__":
     init_db()
-    print(f"\n🧊 智慧冰箱 App 啟動中...\n")
-
-    # 先嘗試 pywebview 原生視窗，失敗就用瀏覽器
-    if "--browser" in sys.argv or not try_pywebview():
-        run_with_browser()
+    print(f"\n🧊 智慧冰箱 App 啟動中... port={PORT}\n")
+    app.run(host="0.0.0.0", port=PORT, debug=False, use_reloader=False)
