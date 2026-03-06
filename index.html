@@ -556,13 +556,11 @@ svg { fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; st
 <div id="toast"></div>
 
 <script>
-// GEMINI CONFIG
-const GEMINI_API_KEY = 'AIzaSyCbL-qkAwDgIl9Ac1P242qy39-7jAMaqqA';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+// GEMINI CONFIG — Key 藏在後端，這裡只呼叫本地 /api/gemini
 const PROMPT_JSON_SCHEMA = `你必須只輸出一個合法的 JSON 物件，不可以有任何前綴文字、後綴文字、markdown、程式碼區塊或解釋。直接從 { 開始，到 } 結束。`;
 
 async function callGemini(parts) {
-  const res = await fetch(GEMINI_URL, {
+  const res = await fetch('/api/gemini', {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ contents:[{parts}], generationConfig:{temperature:0.75,maxOutputTokens:8192} }),
   });
