@@ -64,6 +64,32 @@ def get_db():
 
 # ── API 路由 ─────────────────────────────────────────────────────────
 
+# Gemini API Key 藏在後端，前端永遠看不到
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyDUTaXqZcGbZVPKun2hbL9tFjdSHBUQxtw")
+GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+
+import urllib.request
+
+@app.route("/api/gemini", methods=["POST"])
+def gemini_proxy():
+    """代理 Gemini API，Key 不暴露給前端"""
+    try:
+        body = json.dumps(request.json).encode("utf-8")
+        req = urllib.request.Request(
+            GEMINI_URL,
+            data=body,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        return jsonify(data)
+    except urllib.error.HTTPError as e:
+        err = json.loads(e.read().decode("utf-8"))
+        return jsonify(err), e.code
+    except Exception as e:
+        return jsonify({"error": {"message": str(e)}}), 500
+
 @app.route("/")
 def index():
     return send_from_directory(str(BASE_DIR), "index.html")
